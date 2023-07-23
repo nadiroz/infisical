@@ -7,23 +7,15 @@ services:
     depends_on:
       - mongo
     image: infisical/backend
+    env_file: .env
     environment:
-      - ENCRYPTION_KEY
-      - JWT_SIGNUP_SECRET
-      - JWT_REFRESH_SECRET
-      - JWT_AUTH_SECRET
-      - JWT_SERVICE_SECRET
-      - JWT_PROVIDER_AUTH_SECRET
-      - JWT_AUTH_LIFETIME
-      - JWT_REFRESH_LIFETIME
-      - JWT_SIGNUP_LIFETIME
-      - JWT_PROVIDER_AUTH_LIFETIME
-      - MONGO_URL
-      - MONGO_USERNAME
-      - MONGO_PASSWORD
-      - SITE_URL
+      - NODE_ENV=production
     networks:
       - infisical
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.infisical-backend.rule=PathPrefix(`/api`)"
+      - "traefik.http.services.infisical-backend.loadbalancer.server.port=4000"
 
   frontend:
     container_name: infisical-frontend
@@ -31,17 +23,24 @@ services:
     depends_on:
       - backend
     image: infisical/frontend
-    labels:
-      - "traefik.enable=true"
-      - "traefik.http.routers.infisical-frontend.rule=Host(`infisical.kantanao.com`)"
-      - "traefik.http.services.infisical-frontend.loadbalancer.server.port=3000"
+    env_file: .env
+    environment:
+      - INFISICAL_TELEMETRY_ENABLED=${TELEMETRY_ENABLED}
     networks:
       - infisical
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.infisical-frontend.rule=PathPrefix(`/`)"
+      - "traefik.http.services.infisical-frontend.loadbalancer.server.port=3000"
 
   mongo:
     container_name: infisical-mongo
     image: mongo
     restart: always
+    env_file: .env
+    environment:
+      - MONGO_INITDB_ROOT_USERNAME=${MONGO_USERNAME}
+      - MONGO_INITDB_ROOT_PASSWORD=${MONGO_PASSWORD}
     volumes:
       - mongo-data:/data/db
     networks:
